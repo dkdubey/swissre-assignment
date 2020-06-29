@@ -1,7 +1,7 @@
 package com.swissre.service;
 
-import com.swissre.readfile.FileReader;
-import com.swissre.rest.client.RestClient;
+import com.swissre.exception.PortfolioException;
+import com.swissre.rest.RestClient;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -10,21 +10,21 @@ import java.util.Map;
 public class PortfolioService {
 
     private RestClient restClient;
-    private FileReader fileReader;
 
-    public PortfolioService(RestClient restClient, FileReader fileReader) {
+    public PortfolioService(RestClient restClient) {
         this.restClient = restClient;
-        this.fileReader = fileReader;
     }
 
-    public Map<String, BigDecimal> calculatePortfolio(String currency, String fileName) {
+    public Map<String, BigDecimal> calculatePortfolio(String currency, Map<String, Integer> cryptoFileContents) {
 
         Map<String, BigDecimal> portfolioValue = new HashMap<>();
-        Map<String, Integer> mapCryptoCurrency = fileReader.readFile(fileName);
 
-        if (mapCryptoCurrency != null) {
-            mapCryptoCurrency.forEach((key, value) -> {
+        if (cryptoFileContents != null) {
+            cryptoFileContents.forEach((key, value) -> {
                 BigDecimal cryptoPrice = restClient.getCryptoCurrencyPrice(key, currency);
+                if (cryptoPrice == null) {
+                    throw new PortfolioException("Price not found for supplied crypto.");
+                }
                 BigDecimal cryptoValue = cryptoPrice.multiply(BigDecimal.valueOf(value));
                 portfolioValue.put(key, cryptoValue);
             });

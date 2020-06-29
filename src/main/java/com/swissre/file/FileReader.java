@@ -1,9 +1,9 @@
-package com.swissre.readfile;
+package com.swissre.file;
 
 import com.swissre.exception.PortfolioException;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -16,13 +16,17 @@ public class FileReader {
 
     public Map<String, Integer> readFile(String file) {
 
+        if (file == null || !new File(file).exists()) {
+            throw new PortfolioException("File doesn't exist");
+        }
+
         Map<String, Integer> map = new HashMap<>();
 
-        try (Stream<String> lines = Files.lines(Paths.get(ClassLoader.getSystemResource(file).toURI()))) {
+        try (Stream<String> lines = Files.lines(Paths.get(file))) {
             lines.filter(line -> line.contains(delimiter)).forEach(
                     line -> map.putIfAbsent(line.split(delimiter)[0], Integer.parseInt(line.split(delimiter)[1]))
             );
-        } catch (URISyntaxException | IOException e) {
+        } catch (IOException e) {
             throw new PortfolioException("Couldn't read the crypto file.", e);
         }
         return map;

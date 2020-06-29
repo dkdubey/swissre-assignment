@@ -1,8 +1,6 @@
-package com.swissre.rest.client;
+package com.swissre.rest;
 
 import com.swissre.exception.PortfolioException;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,11 +8,15 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class RestClient {
+public class RestClientImpl implements RestClient {
 
     public static final String BASE_URL = "https://min-api.cryptocompare.com";
+    public static final String REGEX_FOR_JSON_RESPONSE = ".\"EUR\":(.*?)}";
 
+    @Override
     public BigDecimal getCryptoCurrencyPrice(String crypto, String currency) {
 
         HttpURLConnection conn = null;
@@ -31,9 +33,13 @@ public class RestClient {
 
             BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
             String output = br.readLine();
-            JSONObject json = new JSONObject(output);
-            return new BigDecimal(json.get(currency).toString());
-        } catch (IOException | JSONException e) {
+            //As no third party library is allowed for parsing json, using regex.
+            Pattern pattern = Pattern.compile(REGEX_FOR_JSON_RESPONSE);
+            Matcher matcher = pattern.matcher(output);
+            if (matcher.find()) {
+                return new BigDecimal(matcher.group(1));
+            }
+        } catch (IOException e) {
             throw new PortfolioException("Couldn't fetch price for crypto currency.", e);
         } finally {
             try {
@@ -43,5 +49,6 @@ public class RestClient {
                 //ignore exception while closing
             }
         }
+        return null;
     }
 }
